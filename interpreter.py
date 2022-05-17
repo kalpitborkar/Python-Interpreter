@@ -66,12 +66,13 @@ class Interpreter:
                 self.STORE_NAME(argument)
             elif instruction == "LOAD_NAME":
                 self.LOAD_NAME(argument)
-                
+
     def execute(self, what_to_execute):
         instructions = what_to_execute["instructions"]
         for each_step in instructions:
             instruction, argument = each_step
-            argument = self.parse_argument(instruction, argument, what_to_execute)
+            argument = self.parse_argument(
+                instruction, argument, what_to_execute)
             bytecode_method = getattr(self, instruction)
             if argument is None:
                 bytecode_method()
