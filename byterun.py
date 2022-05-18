@@ -1,10 +1,18 @@
 
 from logging import exception
 from tempfile import gettempdir
+import collections
+import dis
+import sys
+import inspect
+import types
 
 
 class VirtualMachineError(exception):
     pass
+
+
+Block = collections.namedtuple("Block", "type, handler, stack_height")
 
 
 class VirtualMachine(object):
@@ -111,7 +119,81 @@ class VirtualMachine(object):
         except:
             self.last_exception = sys.exc_info()[:2] + (None, )
             why = 'exception'
-        
+
+        return why
+
+    def run_frame(self, frame):
+        self.push_frame(frame)
+        while True:
+            byte_name, arguments = self.parse_byte_and_args()
+            why = self.dispatch(byte_name, arguments)
+            while why and frame.block_stack:
+                why = self.manage_block_stack(why)
+
+            if why:
+                break
+        self.pop_frame()
+        if why == 'exception':
+            exc, val, tb = self.last_exception
+            e = exc(val)
+            e.__traceback__ = tb
+            raise e
+
+        return self.return_value
+
+    def push_block(self, b_type, handler=None):
+        stack_height = len(self.frame.stack)
+        self.frame.block_stack.append(Block(b_type, handler, stack_height))
+
+    def pop_block(self):
+        return self.frame.block_stack.pop()
+
+    def unwind_block(self, block):
+        if block.type == 'except-handler':
+            offset = 3
+        else:
+            offset = 0
+        while(len(self.frame.stack) > block.level + offset):
+            self.pop()
+
+        if block.type == 'except-handler':
+            traceback, value, exctype = self.popn(3)
+            self.last_exception = exctype, value, traceback
+            
+    def manage_block_stack(self, why):
+        frame = self.frame
+        block = frame.block_stack[-1]
+        if block.type == 'loop' and why == 'continue':
+            self.jump(self.return_value)
+            why = None
+            return why
+
+        self.pop_block()
+        self.unwind_block(block)
+
+        if block.type == 'loop' and why == 'break':
+            why = None
+            self.jump(block.handler)
+            return why
+
+        if (block.type in ['setup-except', 'finally'] and why == 'exception'):
+            self.push_block('except-handler')
+            exctype, value, tb = self.last_exception
+            self.push(tb, value, exctype)
+            self.push(tb, value, exctype) # yes, twice
+            why = None
+            self.jump(block.handler)
+            return why
+
+        elif block.type == 'finally':
+            if why in ('return', 'continue'):
+                self.push(self.return_value)
+
+            self.push(why)
+
+            why = None
+            self.jump(block.handler)
+            return why
         return why
 
 
@@ -130,6 +212,8 @@ class Frame(object):
                 self.builtin_names = self.builtin_names.__dict__
         self.last_instruction = 0
         self.block_stack = []
+
+     
 
 
 class Function(object):
@@ -159,7 +243,7 @@ class Function(object):
             'argdefs': self.func_defaults,
         }
         if closure:
-            kw['closure'] = tuple(make_cell(0) for _ in closure)
+            kw['closure'] = tuple(self.make_cell(0) for _ in closure)
         self._func = types.FunctionType(code, globs, **kw)
 
     def __call__(self, *args, **kwargs):
