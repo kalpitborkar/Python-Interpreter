@@ -1,5 +1,6 @@
 
 from logging import exception
+from tempfile import gettempdir
 
 
 class VirtualMachineError(exception):
@@ -12,8 +13,6 @@ class VirtualMachine(object):
         self.frame = None
         self.return_value = None
         self.last_exception = None
-        
-
 
     def run_code(self, code, global_names=None, local_names=None):
         frame = self.make_frame(
@@ -50,7 +49,7 @@ class VirtualMachine(object):
 
     def run_frame(self):
         pass
-    
+
     def top(self):
         return self.frame.stack[-1]
 
@@ -67,13 +66,53 @@ class VirtualMachine(object):
             return ret
         else:
             return []
-        
+
     def parse_byte_and_args(self):
         f = self.frame
         opoffset = f.last_instruction
         byteCode = f.code_obj.co_code[opoffset]
         f.last_instruction += 1
         byte_name = dis.opname[byteCode]
+        if byteCode >= dis.HAVE_ARGUMENT:
+            arg = f.code_obj.co_code[f.last_instruction:f.last_instruction+2]
+            f.last_instruction += 2
+            arg_val = arg[0] + (256*arg[1])
+            if byteCode in dis.hasconst:
+                arg = f.code_obj.co_consts[arg_val]
+            elif byteCode in dis.hasname:
+                arg = f.code_obj.co_names[arg_val]
+            elif byteCode in dis.haslocal:
+                arg = f.code_obj.co_varnames[arg_val]
+            elif byteCode in dis.hasjrel:
+                arg = f.last_instruction + arg_val
+            else:
+                arg = arg_val
+            argument = [arg]
+        else:
+            argument = []
+
+        return byte_name, argument
+
+    def dispatch(self, byte_name, argument):
+        why = None
+        try:
+            bytecode_fn = getattr(self, 'byte_%s' % byte_name, None)
+            if bytecode_fn is None:
+                if byte_name.startswith('UNARY_'):
+                    self.unaryOperator(byte_name[6:])
+                elif byte_name.startswith('BINARY_'):
+                    self.binaryOperator(byte_name[7:])
+                else:
+                    raise VirtualMachineError(
+                        "unsupported bytecode type: %s" % byte_name
+                    )
+            else:
+                why = bytecode_fn(*argument)
+        except:
+            self.last_exception = sys.exc_info()[:2] + (None, )
+            why = 'exception'
+        
+        return why
 
 
 class Frame(object):
@@ -135,6 +174,5 @@ class Function(object):
 
     def make_cell(value):
         """Create a real Python closure and grab a cell."""
-        # Thanks to Alex Gaynor for help with this bit of twistiness.
         fn = (lambda x: lambda: x)(value)
         return fn.__closure__[0]
