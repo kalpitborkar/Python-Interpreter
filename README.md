@@ -9,7 +9,7 @@ A compact Python Interpreter written in Python.
 
 ## Byterun structure:
 There are four kinds of objects in Byterun:
-1. `VirtualMachine' class:
+1. `VirtualMachine` class:
   - The `VirtualMachine` class manages the highest level structure.
   - Manages the call stack of frames and contains a mapping of instructions to operations.
   - `VirtualMachine` stores the call stack, the exception state, and return values while they're being passed between frames.
