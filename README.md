@@ -25,5 +25,5 @@ There are four kinds of objects in Byterun:
     - Creates a new frame in the interpreter everytime a function is called.
     - Controls the creation of new `Frame` objects.
 4. `Block` class:
-    - A `Block` just wraps the three attributes of blocks - `type`, `handle`r and `stack_height`
+    - A `Block` just wraps the three attributes of blocks - `type`, `handler` and `stack_height`
     - A `Block` is used for flow control, specifically exception handling and looping.
