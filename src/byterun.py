@@ -17,7 +17,9 @@ Block = collections.namedtuple("Block", "type, handler, stack_height")
 
 class VirtualMachine(object):
     def __init__(self):
+        # The call stack of frames
         self.frames = []
+        # The current frame
         self.frame = None
         self.return_value = None
         self.last_exception = None
@@ -45,10 +47,16 @@ class VirtualMachine(object):
         return frame
 
     def push_frame(self, frame):
+        """
+        Push a frame on top of the frame stack.
+        """
         self.frames.append(frame)
         self.frame = frame
 
     def pop_frame(self):
+        """
+        Pop a frame from top of the frame stack.
+        """
         self.frames.pop()
         if self.frames:
             self.frame = self.frames[-1]
@@ -59,23 +67,37 @@ class VirtualMachine(object):
         pass
 
     def top(self):
+        """
+        Return the value at the top of the stack.
+        """
         return self.frame.stack[-1]
 
     def pop(self):
+        """
+        Pop a value from the top of the stack.
+        """
         return self.frame.stack.pop()
 
     def push(self, *vals):
+        """
+        Push value on top of the stack.
+        """
         self.frame.stack.exetend(vals)
 
     def popn(self, n):
+        """
+        Push 'n' number of values of top of the stack.
+        """
         if n:
             ret = self.frame.stack[-n:]
             self.frame.stack[-n:] = []
             return ret
-        else:
             return []
 
     def parse_byte_and_args(self):
+        """
+        Parse bytecode into instruction and arguments.
+        """
         f = self.frame
         opoffset = f.last_instruction
         byteCode = f.code_obj.co_code[opoffset]
@@ -102,6 +124,9 @@ class VirtualMachine(object):
         return byte_name, argument
 
     def dispatch(self, byte_name, argument):
+        """
+        Dispatch by bytename to the corresponding methods.
+        """
         why = None
         try:
             bytecode_fn = getattr(self, 'byte_%s' % byte_name, None)
@@ -123,6 +148,9 @@ class VirtualMachine(object):
         return why
 
     def run_frame(self, frame):
+        """
+        Run a frame.
+        """
         self.push_frame(frame)
         while True:
             byte_name, arguments = self.parse_byte_and_args()
@@ -161,6 +189,9 @@ class VirtualMachine(object):
             self.last_exception = exctype, value, traceback
             
     def manage_block_stack(self, why):
+        """
+        Manage the block stack and data stack for looping.
+        """
         frame = self.frame
         block = frame.block_stack[-1]
         if block.type == 'loop' and why == 'continue':
