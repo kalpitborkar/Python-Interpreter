@@ -1,11 +1,11 @@
-# Byterun-Python-Interpreter
+# Byterun
 A compact Python Interpreter written in Python.
 
 # About the project
 ## What is Byterun?
   - Byterun is a compact Python interpreter that's easier to understand than CPython.
   - Byterun is written purely in Python.
-  - The Python interpreter is a virtual machine, in particular a stack machine, meaning - it manipulates several stacks to perform its operations.
+  - The Python interpreter is a virtual machine, in particular a stack machine - it manipulates several stacks to perform its operations.
 
 ## Byterun structure:
 There are four kinds of objects in Byterun:
