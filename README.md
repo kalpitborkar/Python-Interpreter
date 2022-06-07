@@ -35,6 +35,9 @@ There are four kinds of objects in Byterun:
 ### Call stack architecture
 ![Call stack architecture](./imgs/call_stack_architecture.jpg)
 
+## License
+Distributed under the MIT License. See `LICENSE.md` for more information.
+
 ## References
 - [CPython - ceval.c](https://github.com/python/cpython/blob/main/Python/ceval.c)
 - https://www.aosabook.org/en/500L/a-python-interpreter-written-in-python.html
