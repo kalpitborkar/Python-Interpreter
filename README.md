@@ -33,7 +33,7 @@ There are four kinds of objects in Byterun:
   - A `Block` is used for flow control, specifically exception handling and looping.
 
 ### Call stack architecture
-![Call stack architecture](./imgs/call_stack_architecture.jpg)
+![Call stack architecture](./docs/imgs/call_stack_architecture.jpg)
 
 ## License
 Distributed under the MIT License. See `LICENSE.md` for more information.
